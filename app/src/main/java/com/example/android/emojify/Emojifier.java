@@ -1,18 +1,18 @@
 /*
-* Copyright (C) 2017 The Android Open Source Project
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*  	http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing, software
-* distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions and
-* limitations under the License.
-*/
+ * Copyright (C) 2017 The Android Open Source Project
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  	http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 package com.example.android.emojify;
 
@@ -29,7 +29,7 @@ import com.google.android.gms.vision.face.FaceDetector;
 class Emojifier {
 
     private static final String LOG_TAG = Emojifier.class.getSimpleName();
-
+    private static Context con;
     /**
      * Method for detecting faces in a bitmap.
      *
@@ -39,6 +39,8 @@ class Emojifier {
     static void detectFaces(Context context, Bitmap picture) {
 
         // Create the face detector, disable tracking and enable classifications
+        con=context;
+
         FaceDetector detector = new FaceDetector.Builder(context)
                 .setTrackingEnabled(false)
                 .setClassificationType(FaceDetector.ALL_CLASSIFICATIONS)
@@ -54,15 +56,14 @@ class Emojifier {
         Log.d(LOG_TAG, "detectFaces: number of faces = " + faces.size());
 
         // If there are no faces detected, show a Toast message
-        if(faces.size() == 0){
+        if (faces.size() == 0) {
             Toast.makeText(context, R.string.no_faces_message, Toast.LENGTH_SHORT).show();
         } else {
             for (int i = 0; i < faces.size(); ++i) {
                 Face face = faces.valueAt(i);
 
                 // Log the classification probabilities for each face.
-                getClassifications(face);
-                // TODO (6): Change the call to getClassifications to whichEmoji() to log the appropriate emoji for the facial expression.
+                whichEmoji(face);
             }
 
         }
@@ -78,20 +79,50 @@ class Emojifier {
      *
      * @param face The face to get the classification probabilities.
      */
-    private static void getClassifications(Face face){
-        // TODO (2): Change the name of the getClassifications() method to whichEmoji() (also change the log statements)
+    private static void whichEmoji(Face face) {
         // Log all the probabilities
-        Log.d(LOG_TAG, "getClassifications: smilingProb = " + face.getIsSmilingProbability());
-        Log.d(LOG_TAG, "getClassifications: leftEyeOpenProb = "
-                + face.getIsLeftEyeOpenProbability());
-        Log.d(LOG_TAG, "getClassifications: rightEyeOpenProb = "
-                + face.getIsRightEyeOpenProbability());
+        double smile_prob = face.getIsSmilingProbability();
+        double left_eye_prob = face.getIsLeftEyeOpenProbability();
+        double right_eye_prob = face.getIsRightEyeOpenProbability();
+        Log.d(LOG_TAG, "whichEmoji: smilingProb = " + smile_prob);
+        Log.d(LOG_TAG, "whichEmoji: leftEyeOpenProb = "
+                + left_eye_prob);
+        Log.d(LOG_TAG, "whichEmoji: rightEyeOpenProb = "
+                + right_eye_prob);
 
-        // TODO (3): Create threshold constants for a person smiling, and and eye being open by taking pictures of yourself and your friends and noting the logs.
-        // TODO (4): Create 3 boolean variables to track the state of the facial expression based on the thresholds you set in the previous step: smiling, left eye closed, right eye closed.
-        // TODO (5): Create an if/else system that selects the appropriate emoji based on the above booleans and log the result.
+        final double THRESHOLD_SMILE = 0.1;
+        final double THRESHOLD_EYE = 0.25;
+        boolean smiling = false;
+        boolean left_eye_open = false;
+        boolean right_eye_open = false;
+        Emoji emoji;
+        if (smile_prob >= THRESHOLD_SMILE)
+            smiling = true;
+        if (left_eye_prob >= THRESHOLD_EYE)
+            left_eye_open = true;
+        if (right_eye_prob >= THRESHOLD_EYE)
+            right_eye_open = true;
+        if (smiling && left_eye_open && right_eye_open)
+            emoji = Emoji.smiling;
+        else if (smiling && left_eye_open)
+            emoji = Emoji.right_wink;
+        else if (smiling && right_eye_open)
+            emoji = Emoji.left_wink;
+        else if (smiling)
+            emoji = Emoji.closed_eye_smiling;
+        else if (left_eye_open && right_eye_open)
+            emoji = Emoji.frowning;
+        else if (left_eye_open)
+            emoji = Emoji.right_wink_frowning;
+        else if (right_eye_open)
+            emoji = Emoji.left_wink_frowning;
+        else
+            emoji = Emoji.close_eye_frowning;
+        Toast.makeText(con, emoji.toString(), Toast.LENGTH_LONG).show();
     }
 
 
-    // TODO (1): Create an enum class called Emoji that contains all the possible emoji you can make (smiling, frowning, left wink, right wink, left wink frowning, right wink frowning, closed eye smiling, close eye frowning).
+    enum Emoji {
+        smiling, frowning, left_wink, right_wink, left_wink_frowning, right_wink_frowning, closed_eye_smiling, close_eye_frowning;
+    }
 }
